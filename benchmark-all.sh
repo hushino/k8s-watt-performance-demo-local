@@ -18,8 +18,35 @@ success() { echo -e "${GREEN}[$(date '+%Y-%m-%d %H:%M:%S')] ✓${NC} $1"; }
 error() { echo -e "${RED}[$(date '+%Y-%m-%d %H:%M:%S')] ✗${NC} $1"; }
 warning() { echo -e "${YELLOW}[$(date '+%Y-%m-%d %H:%M:%S')] ⚠${NC} $1"; }
 
-FRAMEWORKS=("next" "react-router" "tanstack")
+ALL_FRAMEWORKS=("next" "next-cachecomponents" "react-router" "tanstack")
+INCLUDE_FRAMEWORKS="${INCLUDE_FRAMEWORKS:-}"
+EXCLUDE_FRAMEWORKS="${EXCLUDE_FRAMEWORKS:-}"
 COOLDOWN_BETWEEN_BENCHMARKS=20
+
+build_framework_list() {
+	local selected=()
+	local include_raw=",${INCLUDE_FRAMEWORKS// /},"
+	local exclude_raw=",${EXCLUDE_FRAMEWORKS// /},"
+
+	for fw in "${ALL_FRAMEWORKS[@]}"; do
+		if [[ -n "$INCLUDE_FRAMEWORKS" && "$include_raw" != *",$fw,"* ]]; then
+			continue
+		fi
+		if [[ -n "$EXCLUDE_FRAMEWORKS" && "$exclude_raw" == *",$fw,"* ]]; then
+			continue
+		fi
+		selected+=("$fw")
+	done
+
+	if [[ ${#selected[@]} -eq 0 ]]; then
+		error "No frameworks selected. Check INCLUDE_FRAMEWORKS/EXCLUDE_FRAMEWORKS values."
+		exit 1
+	fi
+
+	FRAMEWORKS=("${selected[@]}")
+}
+
+build_framework_list
 
 declare -A RESULTS
 FAILED_FRAMEWORKS=()
@@ -52,7 +79,7 @@ for i in "${!FRAMEWORKS[@]}"; do
 
 	START_TIME=$(date +%s)
 
-	if FRAMEWORK="$framework" ./benchmark.sh; then
+	if FRAMEWORK="$framework" bash ./benchmark.sh; then
 		END_TIME=$(date +%s)
 		DURATION=$((END_TIME - START_TIME))
 		DURATION_MIN=$((DURATION / 60))

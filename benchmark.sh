@@ -28,7 +28,7 @@ APP_PID=""
 validate_framework() {
 	if [[ ! -d "$FRAMEWORK_DIR" ]]; then
 		error "Framework directory not found: $FRAMEWORK_DIR"
-		error "Valid values: next, react-router, tanstack"
+		error "Valid values: next, next-cachecomponents, react-router, tanstack"
 		return 1
 	fi
 

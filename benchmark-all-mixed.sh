@@ -8,10 +8,37 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-FRAMEWORKS=("next" "react-router" "tanstack")
+ALL_FRAMEWORKS=("next" "next-cachecomponents" "react-router" "tanstack")
+INCLUDE_FRAMEWORKS="${INCLUDE_FRAMEWORKS:-}"
+EXCLUDE_FRAMEWORKS="${EXCLUDE_FRAMEWORKS:-}"
 TARGET_RPS=1000
 DURATION_SECONDS=180
 COOLDOWN_SECONDS=20
+
+build_framework_list() {
+  local selected=()
+  local include_raw=",${INCLUDE_FRAMEWORKS// /},"
+  local exclude_raw=",${EXCLUDE_FRAMEWORKS// /},"
+
+  for fw in "${ALL_FRAMEWORKS[@]}"; do
+    if [[ -n "$INCLUDE_FRAMEWORKS" && "$include_raw" != *",$fw,"* ]]; then
+      continue
+    fi
+    if [[ -n "$EXCLUDE_FRAMEWORKS" && "$exclude_raw" == *",$fw,"* ]]; then
+      continue
+    fi
+    selected+=("$fw")
+  done
+
+  if [[ ${#selected[@]} -eq 0 ]]; then
+    echo "No frameworks selected. Check INCLUDE_FRAMEWORKS/EXCLUDE_FRAMEWORKS values." >&2
+    exit 1
+  fi
+
+  FRAMEWORKS=("${selected[@]}")
+}
+
+build_framework_list
 
 echo ""
 echo "========================================================================"
@@ -39,7 +66,7 @@ for i in "${!FRAMEWORKS[@]}"; do
   BENCH_PROFILE="mixed" \
   TARGET_RPS="$TARGET_RPS" \
   DURATION_SECONDS="$DURATION_SECONDS" \
-  ./benchmark.sh
+  bash ./benchmark.sh
 
   if [[ "$idx" -lt "$total" ]]; then
     echo ""
